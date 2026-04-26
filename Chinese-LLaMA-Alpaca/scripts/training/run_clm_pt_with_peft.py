@@ -46,13 +46,23 @@ from transformers import (
     HfArgumentParser,
     Trainer,
     TrainingArguments,
-    is_torch_tpu_available,
     set_seed,
 )
 from transformers.testing_utils import CaptureLogger
 from transformers.trainer_utils import get_last_checkpoint
-from transformers.utils import send_example_telemetry
 from transformers.utils.versions import require_version
+
+try:
+    from transformers import is_torch_tpu_available
+except ImportError:
+    def is_torch_tpu_available():
+        return False
+
+try:
+    from transformers.utils import send_example_telemetry
+except ImportError:
+    def send_example_telemetry(*args, **kwargs):
+        pass
 
 from sklearn.metrics import accuracy_score
 from peft import LoraConfig, TaskType, get_peft_model, PeftModel, get_peft_model_state_dict
@@ -376,7 +386,6 @@ def main():
     config_kwargs = {
         "cache_dir": model_args.cache_dir,
         "revision": model_args.model_revision,
-        "use_auth_token": True if model_args.use_auth_token else None,
     }
     if model_args.config_name:
         config = AutoConfig.from_pretrained(model_args.config_name, **config_kwargs)
@@ -394,12 +403,11 @@ def main():
         "cache_dir": model_args.cache_dir,
         "use_fast": model_args.use_fast_tokenizer,
         "revision": model_args.model_revision,
-        "use_auth_token": True if model_args.use_auth_token else None,
     }
     if model_args.tokenizer_name:
         tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, **tokenizer_kwargs)
     elif model_args.tokenizer_name_or_path:
-        tokenizer = LlamaTokenizer.from_pretrained(model_args.tokenizer_name_or_path, **tokenizer_kwargs)
+        tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name_or_path, **tokenizer_kwargs)
     else:
         raise ValueError(
             "You are instantiating a new tokenizer from scratch. This is not supported by this script."
@@ -533,7 +541,6 @@ def main():
             config=config,
             cache_dir=model_args.cache_dir,
             revision=model_args.model_revision,
-            use_auth_token=True if model_args.use_auth_token else None,
             torch_dtype=torch_dtype,
             low_cpu_mem_usage=True
         )
@@ -541,21 +548,6 @@ def main():
         model = AutoModelForCausalLM.from_config(config)
         n_params = sum({p.data_ptr(): p.numel() for p in model.parameters()}.values())
         logger.info(f"Training new model from scratch - Total size={n_params/2**20:.2f}M params")
-
-    model_vocab_size = model.get_output_embeddings().weight.size(0)
-    if not (
-       (model_vocab_size==32000 and len(tokenizer)==49953) or \
-       (model_vocab_size==32000 and len(tokenizer)==32000) or \
-       (model_vocab_size==49953 and len(tokenizer)==49953) or \
-       (model_vocab_size==49954 and len(tokenizer)==49954)
-    ):
-        raise ValueError(
-            f"The combination of base model (size: {model_vocab_size}) and tokenizer (size: {len(tokenizer)}) is not a valid configuration. Please check our project wiki for further information. \n"
-            "Valid configurations (base model / tokenizer):\n"
-            "- Continue pre-training original LLaMA: 32000 / 32000 \n"
-            "- Pre-training Chinese LLaMA based on original LLaMA: 32000 / 49953 \n"
-            "- Continue pre-training Chinese LLaMA: 49953 / 49953 \n"
-            "- Continue pre-training Chinese Alpaca: 49954 / 49954 \n")
 
     model.resize_token_embeddings(len(tokenizer))
     if training_args.peft_path is not None:
@@ -581,10 +573,6 @@ def main():
             modules_to_save=modules_to_save)
         model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()
-    old_state_dict = model.state_dict
-    model.state_dict = (
-        lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())
-    ).__get__(model, type(model))
 
     # Initialize our Trainer
     trainer = Trainer(
