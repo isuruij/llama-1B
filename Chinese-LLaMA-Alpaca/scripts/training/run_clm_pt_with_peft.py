@@ -466,6 +466,11 @@ def main():
         lm_datasets = []
         path = Path(data_args.dataset_dir)
         files = [file.name for file in path.glob("*.txt")]
+        if not files:
+            raise ValueError(
+                f"No .txt training files found in '{path.resolve()}'. "
+                "Ensure --dataset_dir points to a directory containing .txt text files."
+            )
         if training_args.debug_mode is True:
             files = [files[0]]
         for idx, file in enumerate(files):
