@@ -70,6 +70,9 @@ from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
 
 class SavePeftModelCallback(transformers.TrainerCallback):
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+
     def save_model(self, args, state, kwargs):
         if state.best_model_checkpoint is not None:
             checkpoint_folder = os.path.join(state.best_model_checkpoint, "pt_lora_model")
@@ -78,7 +81,7 @@ class SavePeftModelCallback(transformers.TrainerCallback):
 
         peft_model_path = os.path.join(checkpoint_folder, "pt_lora_model")
         kwargs["model"].save_pretrained(peft_model_path)
-        kwargs["tokenizer"].save_pretrained(peft_model_path)
+        self.tokenizer.save_pretrained(peft_model_path)
 
     def on_save(self, args, state, control, **kwargs):
         self.save_model(args, state, kwargs)
@@ -87,7 +90,7 @@ class SavePeftModelCallback(transformers.TrainerCallback):
     def on_train_end(self, args, state, control, **kwargs):
         peft_model_path = os.path.join(args.output_dir, "pt_lora_model")
         kwargs["model"].save_pretrained(peft_model_path)
-        kwargs["tokenizer"].save_pretrained(peft_model_path)
+        self.tokenizer.save_pretrained(peft_model_path)
 
 
 def accuracy(predictions, references, normalize=True, sample_weight=None):
@@ -592,7 +595,7 @@ def main():
         if training_args.do_eval and not is_torch_tpu_available()
         else None,
     )
-    trainer.add_callback(SavePeftModelCallback)
+    trainer.add_callback(SavePeftModelCallback(tokenizer))
     # Training
     if training_args.do_train:
         checkpoint = None
