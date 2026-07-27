@@ -13,6 +13,7 @@ DEFAULT_OUTPUT_DIR = Path("new_split_v2")
 DEFAULT_SEED = 42
 TEST_RATIO_NUMERATOR = 1
 TEST_RATIO_DENOMINATOR = 10
+NO_ANSWER = "මෙම ප්‍රශ්නයට පිළිතුරු දීමට ප්‍රමාණවත් තොරතුරු නොමැත."
 REQUIRED_FIELDS = {
     "answer",
     "answerable",
@@ -64,6 +65,8 @@ def load_records(input_dir):
                     raise TypeError(
                         f"{path}:{line_number}: answerable must be a JSON boolean"
                     )
+                if record["answerable"] is False:
+                    record["answer"] = NO_ANSWER
                 if not isinstance(record["context"], str) or not record["context"].strip():
                     raise ValueError(f"{path}:{line_number}: context is empty")
 
@@ -225,6 +228,16 @@ def validate_split(records, train_records, test_records, targets):
     test_labels = Counter(record["answerable"] for record in test_records)
     if set(train_labels) != {True, False} or set(test_labels) != {True, False}:
         raise AssertionError("Both splits must contain answerable true and false")
+
+    noncanonical = [
+        record
+        for record in train_records + test_records
+        if record["answerable"] is False and record["answer"] != NO_ANSWER
+    ]
+    if noncanonical:
+        raise AssertionError(
+            f"{len(noncanonical)} unanswerable records do not use the canonical answer"
+        )
 
 
 def print_summary(name, records):
