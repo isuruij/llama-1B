@@ -15,12 +15,14 @@ print("Loading tokenizers...")
 extended_tokenizer = AutoTokenizer.from_pretrained("polyglots/Extended-Sinhala-LLaMA", token=HF_TOKEN)
 base_llama_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct", token=HF_TOKEN)
 qwen_tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-4B", token=HF_TOKEN)
+extended_qwen_tokenizer = AutoTokenizer.from_pretrained("isji/Extended-Sinhala-Qwen3", token=HF_TOKEN)
 
 # 3. Process the entire sentence for each model
 tokenizers_list = [
     ("Extended Sinhala (Polyglots)", extended_tokenizer),
     ("Base Llama 3", base_llama_tokenizer),
-    ("Qwen 4B", qwen_tokenizer)
+    ("Qwen 4B", qwen_tokenizer),
+    ("Extended Sinhala Qwen3", extended_qwen_tokenizer),
 ]
 
 for name, tokenizer in tokenizers_list:
