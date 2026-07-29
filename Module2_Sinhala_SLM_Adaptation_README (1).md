@@ -48,8 +48,11 @@ Two adaptation routes were built and compared under one evaluation harness:
   fell from 0.813 (step 13) to 0.594 (step 117) before plateauing; 1B showed the same
   pattern at a higher loss floor (0.929 → 0.705), consistent with capacity-limited
   fluency rather than an under-trained run.
-- The 1B pipeline (CPT + QA LoRA adapters + extended tokenizer) produced
-  `isji/sinllama-1b-qa-v6-merged`;
+- The 1B and 3B pipelines (CPT + QA LoRA adapters + extended tokenizer) produced
+  `isji/sinllama-1b-qa-v6-merged` and `isji/sinllama-3b-qa-v6-merged`. Full per-question
+  transcripts (question, expected answer, generated answer, exact/F1 per item) are in
+  `results/llama-1B-finetuned.txt` and `results/llama-3B-finetuned.txt`; aggregate
+  numbers are in the Results section below.
 
 ### 4. Comparative Arm — Qwen3-4B (proof of concept)
 
@@ -122,9 +125,20 @@ systems diff directly.
 
 | System | Exact match | Token F1 | Answerable EM | Unanswerable EM | False-answer rate |
 |---|---|---|---|---|---|
-| SinLlama 1B (CPT + QA-FT v6) | 22.22% | 0.496 | 11.85% | 100% | 0.00% |
+| SinLlama 1B (CPT + QA-FT v6) | 22.88% | 0.505 | 12.59% | 100% | 0.00% |
 | **Qwen3-4B-Instruct (zero-shot, no adaptation)** | 13.73% | 0.606 | 4.44% | 83.33% | 16.67% |
-| SinLlama 3B (CPT + QA-FT v6) | 32.68% | 0.648 | 23.70% | 100% | 0.00% |
+| SinLlama 3B (CPT + QA-FT v6) | 32.03% | 0.650 | 22.96% | 100% | 0.00% |
+
+The Llama rows are from `results/llama-1B-finetuned.txt` and
+`results/llama-3B-finetuned.txt`, produced by `qa-evaluation.ipynb` after it was rebuilt
+to reproduce the v6 training-time inference path exactly (same instruction text,
+context/question labels, evidence-window retrieval, and grounding gate as
+`qa-finetuning_v6.ipynb` — verified byte-for-byte identical prompt construction). An
+earlier version of this evaluation notebook used a different prompt format the models
+were never trained on and scored far lower for reasons unrelated to model quality; these
+numbers are within run-to-run noise of the original v6 training-time evaluation
+(22.22%/32.68% EM), confirming the corrected notebook reproduces the intended result
+rather than either under- or over-stating it.
 
 Zero-shot Qwen already exceeds the fully-adapted SinLlama 1B on token F1 despite no
 Sinhala-specific training at all, and its answered-question F1 (0.659, computed over
@@ -136,9 +150,9 @@ questions answered instead of refused) — both are exactly what QA fine-tuning 
 not evidence of a knowledge gap.
 
 A head-to-head on answerable questions (F1 ≥ 0.5 = solved) found the two model
-families solve substantially different subsets: 64 solved by both, 26 by SinLlama-3B
-only, 20 by Qwen-zero-shot only, 25 by neither. An oracle over the two would solve
-81.5% of answerable questions, well above either alone — evidence the routes are
+families solve substantially different subsets: 64 solved by both, 27 by SinLlama-3B
+only, 20 by Qwen-zero-shot only, 24 by neither. An oracle over the two would solve
+82.2% of answerable questions, well above either alone — evidence the routes are
 complementary, not redundant.
 
 ### Tokenizer fertility (Sinhala, measured on the test split)
