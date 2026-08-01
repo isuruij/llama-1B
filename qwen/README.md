@@ -262,6 +262,17 @@ So your honest, defensible novelty claims are:
 5. **A compute-cost analysis:** the multilingual-instruct route reaches equal or better
    faithfulness without any continual pre-training — a practically important result for
    low-resource-language practitioners with limited GPU budgets.
+6. **A tokenizer-extension inference-efficiency result:** extending Qwen3-4B's tokenizer with
+   Sinhala-specific subword tokens reduces the number of tokens needed to encode identical
+   Sinhala context by 5.29× (6,008 → 1,135 tokens), confirming the fertility improvement
+   holds at real retrieval-context scale, not just on isolated words. Under matched greedy
+   decoding, this translates into a 19.4× reduction in end-to-end generation time on the same
+   query (14.473s → 0.747s). The speedup comes from needing far fewer input and output tokens
+   to represent the same content, not from faster per-token decoding — per-token throughput is
+   in fact marginally lower for the tokenizer-extended model (14.7 vs. 17.6 tokens/second) due
+   to its larger vocabulary.
+   > Numbers computed by `qwen/qwen3-4b-inference-time-comparison.ipynb`; full breakdown and
+   > caveats in `qwen/TOKENIZER-COMPARISON.md`.
 
 ### The thesis narrative (one paragraph you can adapt)
 
