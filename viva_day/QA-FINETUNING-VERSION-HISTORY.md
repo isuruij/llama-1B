@@ -1,6 +1,6 @@
 
 
-| Parameter | v2 | v6 | How to explain it in one line |
+| Parameter | v2 | v6 |  |
 |---|---|---|---|
 | LoRA rank | 16 | 32 | Doubled the model's dedicated capacity for learning the QA task. |
 | Epochs | fixed 3 | 3 (tested against 5) | Directly tested 5 vs. 3 epochs; 5 overfit — validation loss got worse partway through while training loss kept dropping — so 3 was kept. |
